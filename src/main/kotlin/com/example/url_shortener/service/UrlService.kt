@@ -4,6 +4,8 @@ import com.example.url_shortener.dto.OriginalUrlRequest
 import com.example.url_shortener.dto.OriginalUrlResponse
 import com.example.url_shortener.dto.ShortenUrlRequest
 import com.example.url_shortener.dto.ShortenUrlResponse
+import com.example.url_shortener.exception.BadRequestException
+import com.example.url_shortener.exception.UrlNotFoundException
 import com.example.url_shortener.model.Url
 import com.example.url_shortener.repository.UrlRepository
 import org.apache.commons.codec.binary.Base64
@@ -22,7 +24,7 @@ class UrlService(private val urlRepository: UrlRepository) {
     fun shortenUrl(request: ShortenUrlRequest): ShortenUrlResponse {
         if (!urlValidator.isValid(request.originalUrl)) {
             logger.warn { "Invalid URL: ${request.originalUrl}" }
-            //todo - throw Exception
+            throw BadRequestException("Invalid URL")
         }
 
         val existingUrl = urlRepository.findByOriginalUrl(request.originalUrl)
@@ -36,9 +38,9 @@ class UrlService(private val urlRepository: UrlRepository) {
         val id = String(base64.decode(request.shortUrl)).toLongOrNull()
         if (id == null) {
             logger.warn { "Invalid short URL: ${request.shortUrl}" }
-            //throw BadRequestException("Invalid short URL")
+            throw BadRequestException("Invalid short URL")
         }
-        val url = urlRepository.findById(id).orElseThrow { //todo - throw Exception }
+        val url = urlRepository.findById(id).orElseThrow { UrlNotFoundException("URL not found") }
         logger.info { "URL resolved: ${request.shortUrl} -> ${url.originalUrl}" }
         return OriginalUrlResponse(url.originalUrl)
     }
